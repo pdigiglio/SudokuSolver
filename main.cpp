@@ -1,9 +1,10 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <fstream>
+#include <iostream>
 #include <set>
 #include <vector>
-#include <iostream>
 
 #include "inverse_evaluator.h"
 #include "StaticVector.h"
@@ -263,43 +264,6 @@ size_t count_occurrences_in_grid(T value, const std::array<StaticVector<T, Digit
     return occurrences;
 }
 
-//template <typename T, size_t N, size_t Digits = Sqrt<N>::value>
-//size_t count_occurrences(T value, const std::array<StaticVector<T, Digits>, N>& missingDigits, size_t row, size_t column)
-//{
-//    size_t occurrences = 0;
-//
-//    for (size_t r = 0; r < Digits; ++r)
-//    {
-//        const auto& missing = get_cell_at(missingDigits, r, column);
-//        occurrences += contains(missing, value);
-//    }
-//
-//    for (size_t c = 0; c < Digits; ++c)
-//    {
-//        const auto& missing = get_cell_at(missingDigits, row, c);
-//        occurrences += contains(missing, value);
-//    }
-//
-//    constexpr auto subgridSideLength = Sqrt<Digits>::value;
-//
-//    const auto rowStart = subgridSideLength * (row / subgridSideLength);
-//    const auto rowEnd = rowStart + subgridSideLength;
-//
-//    const auto columnStart = subgridSideLength * (column / subgridSideLength);
-//    const auto columnEnd = columnStart + subgridSideLength;
-//
-//    for (size_t r = rowStart; r < rowEnd; ++r)
-//    {
-//        for (size_t c = columnStart; c < columnEnd; ++c)
-//        {
-//            const auto& missing = get_cell_at(missingDigits, r, c);
-//            occurrences += contains(missing, value);
-//        }
-//    }
-//
-//    return occurrences;
-//}
-
 template <typename T, size_t N>
 class Solver final
 {
@@ -428,85 +392,56 @@ Solver<T, N> make_solver(std::array<T, N>& grid)
     return Solver<T, N>(grid);
 }
 
-int main()
+template <size_t N = 81>
+bool fill_from_input_file(const char* filePath, std::array<char, N>& grid)
 {
+    std::ifstream inFile (filePath);
+    if (!inFile.is_open())
+    {
+        fprintf(stderr, "Invalid input file '%s'\n", filePath);
+        return false;
+    }
+
+    constexpr auto gridSideLength = Sqrt<N>::value;
+    for (size_t r = 0; r < gridSideLength; ++r)
+    {
+        for (size_t c = 0; c < gridSideLength; ++c)
+        {
+            char buffer = 0;
+            inFile >> buffer;
+
+            if (buffer < '0' || buffer > '9')
+            {
+                fprintf(stderr, "Invalid input: '%c' at (%zu, %zu)\n", buffer, r, c);
+                return false;
+            }
+
+            set_cell_at(grid, r, c, static_cast<char>(buffer - '0'));
+        }
+    }
+
+    return true;
+}
+
+int main(int argc, char *argv[])
+{
+    if (argc != 2)
+    {
+        fprintf(stderr, "Usage: SudokuSolver \"input file\"\n");
+        return 1;
+    }
+
     constexpr char digits = 9;
 
-    //// Easy
-    //std::array<char, digits * digits> grid
-    //{
-    //    5, 0, 1, /*|*/ 0, 6, 0, /*|*/ 2, 0, 9,
-    //    7, 3, 0, /*|*/ 0, 2, 0, /*|*/ 0, 5, 4,
-    //    9, 0, 0, /*|*/ 8, 0, 0, /*|*/ 0, 0, 7,
-    //    // ----------------------------------
-    //    0, 0, 0, /*|*/ 0, 0, 0, /*|*/ 3, 0, 0,
-    //    2, 5, 0, /*|*/ 0, 0, 0, /*|*/ 0, 6, 8,
-    //    0, 0, 7, /*|*/ 0, 0, 0, /*|*/ 0, 0, 0,
-    //    // ----------------------------------
-    //    6, 0, 0, /*|*/ 0, 0, 9, /*|*/ 0, 0, 3,
-    //    4, 1, 0, /*|*/ 0, 5, 0, /*|*/ 0, 2, 6,
-    //    8, 0, 9, /*|*/ 0, 1, 0, /*|*/ 4, 0, 5
-    //};
-
-    // Medium
-    std::array<char, digits * digits> grid
-    {
-        6, 0, 4, /*|*/ 0, 0, 0, /*|*/ 2, 0, 8,
-        0, 0, 0, /*|*/ 0, 2, 0, /*|*/ 0, 0, 0,
-        9, 0, 5, /*|*/ 0, 3, 0, /*|*/ 1, 0, 7,
-        // ----------------------------------
-        0, 0, 0, /*|*/ 5, 0, 0, /*|*/ 0, 0, 0,
-        0, 1, 7, /*|*/ 0, 4, 0, /*|*/ 9, 6, 0,
-        0, 0, 0, /*|*/ 0, 0, 8, /*|*/ 0, 0, 0,
-        // ----------------------------------
-        5, 0, 2, /*|*/ 0, 7, 0, /*|*/ 8, 0, 6,
-        0, 0, 0, /*|*/ 0, 9, 0, /*|*/ 0, 0, 0,
-        7, 0, 6, /*|*/ 0, 0, 0, /*|*/ 3, 0, 4
-    };
+    std::array<char, digits * digits> grid;
+    const auto readStatus = fill_from_input_file(argv[1], grid);
+    if (!readStatus)
+        return 1;
 
     print_grid(grid);
 
     auto solver = make_solver(grid);
     solver.exec();
-
-    // Solver: v1.
-    //StaticVector<char, digits> forbiddenDigits;
-
-    //size_t totalInsertedDigits = 0;
-    //size_t iterations = 0;
-    //size_t insertedDigits = 0;
-    //do
-    //{
-    //    ++iterations;
-    //    insertedDigits = 0;
-
-    //    for (size_t r = 0; r < digits; ++r)
-    //    {
-    //        for (size_t c = 0; c < digits; ++c)
-    //        {
-    //            if (0 == get_cell_at(grid, r, c))
-    //            {
-    //                forbiddenDigits.clear();
-
-    //                append_row_digits(grid, r, forbiddenDigits);
-    //                append_column_digits(grid, c, forbiddenDigits);
-    //                append_subgrid_digits(grid, r, c, forbiddenDigits);
-
-    //                if (digits - 1 == forbiddenDigits.size())
-    //                {
-    //                    auto missing = get_missing(forbiddenDigits);
-    //                    assert(missing.size() == 1);
-
-    //                    set_cell_at(grid, r, c, missing[0]);
-    //                    ++insertedDigits;
-    //                }
-    //            }
-    //        }
-    //    }
-
-    //    totalInsertedDigits += insertedDigits;
-    //}
-    //while(0 != insertedDigits);
 
     puts("\nSolved:\n");
     print_grid(grid);
