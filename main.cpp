@@ -110,32 +110,52 @@ void append_subgrid_digits(const std::array<T, N>& grid, size_t row, size_t colu
     }
 }
 
-template <typename T, size_t N>
-void print_grid(const std::array<T, N>& grid)
+template <size_t N>
+void print_row(const std::array<char, N>& grid, size_t row)
 {
-    constexpr auto digits = Sqrt<N>::value;
-    constexpr auto subgridSideLength = Sqrt<digits>::value;
+    constexpr auto sideLength = Sqrt<N>::value;
+    const auto offset = row * sideLength;
+    printf("%c  %c  %c | %c  %c  %c | %c  %c  %c\n",
+           grid[offset + 0] + '0', grid[offset + 1] + '0', grid[offset + 2] + '0',
+           grid[offset + 3] + '0', grid[offset + 4] + '0', grid[offset + 5] + '0',
+           grid[offset + 6] + '0', grid[offset + 7] + '0', grid[offset + 8] + '0');
 
-    for (size_t sgr = 0; sgr < subgridSideLength; ++sgr)
+}
+
+template <size_t N>
+void print_rows(const std::array<char, N>& grid, size_t rowStart, size_t rowEnd)
+{
+    for (size_t r = rowStart; r < rowEnd; ++r)
     {
-        const auto rStart = sgr * subgridSideLength;
-        const auto rEnd = (sgr + 1) * subgridSideLength;
-        for (size_t r = rStart; r < rEnd; ++r)
-        {
-            for (size_t sgc = 0; sgc < subgridSideLength; ++sgc)
-            {
-                const auto cStart = sgc * subgridSideLength;
-                const auto cEnd = (sgc + 1) * subgridSideLength;
-                for (size_t c = cStart; c < cEnd; ++c)
-                {
-                    printf(" %c ",  get_cell_at(grid, r, c) + 48);
-                }
-                printf("|");
-            }
-            printf("\n");
-        }
-        printf("------------------------------\n");
+        print_row(grid, r);
     }
+}
+
+void print_row_separator()
+{
+    puts("---------------------------");
+}
+
+template <size_t N>
+void print_grid(const std::array<char, N>& grid)
+{
+    constexpr auto gridSideLength = Sqrt<N>::value;
+    constexpr auto subgridSideLength = Sqrt<gridSideLength>::value;
+
+    puts("");
+    auto rStart = 0;
+    auto rEnd =  subgridSideLength;
+    for (size_t sgr = 0; sgr < subgridSideLength - 1; ++sgr)
+    {
+        print_rows(grid, rStart, rEnd);
+        print_row_separator();
+
+        rStart += subgridSideLength;
+        rEnd += subgridSideLength;
+    }
+
+    print_rows(grid, rStart, rEnd);
+    puts("");
 }
 
 template <typename T, size_t Capacity>
@@ -443,7 +463,7 @@ int main(int argc, char *argv[])
     auto solver = make_solver(grid);
     solver.exec();
 
-    puts("\nSolved:\n");
+    puts("Solved:");
     print_grid(grid);
 
     printf("Inserted %zu (of %zu) elements in %zu iterations.\n",
