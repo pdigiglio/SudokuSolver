@@ -2,6 +2,8 @@
 #include "Solver.h"
 #include "Validator.h"
 
+#include <cstdio>
+
 void print_validation_status(bool status)
 {
     auto output = status ? stdout : stderr;

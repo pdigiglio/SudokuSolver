@@ -147,11 +147,14 @@ void remove_from_candidates(
 }
 
 std::vector<MatrixPoint<unsigned>> get_occurrences_in_grid(
-        char value,
-        const Matrix<StaticVector<char, SudokuGrid::rows()>, SudokuGrid::rows(), SudokuGrid::columns()>& candidateDigits,
+        SudokuGrid::value_type value,
+        const Solver::candidate_digit_collection& candidateDigits,
         size_t row,
         size_t column)
 {
+    assert(row < candidateDigits.rows());
+    assert(column < candidateDigits.columns());
+
     constexpr auto subgridSideLength = Sqrt<SudokuGrid::rows()>::value;
     const auto rowStart = subgridSideLength * (row / subgridSideLength);
     const auto columnStart = subgridSideLength * (column / subgridSideLength);
@@ -166,6 +169,46 @@ std::vector<MatrixPoint<unsigned>> get_occurrences_in_grid(
             {
                 points.emplace_back(r, c);
             }
+        }
+    }
+
+    return points;
+}
+
+std::vector<MatrixPoint<unsigned>> get_occurrences_in_row(
+        SudokuGrid::value_type value,
+        const Solver::candidate_digit_collection& candidateDigits,
+        size_t row)
+{
+    assert(row < candidateDigits.rows());
+
+    std::vector<MatrixPoint<unsigned>> points;
+    for (unsigned c = 0; c < candidateDigits.columns(); ++c)
+    {
+        const auto& candidates = candidateDigits[row][c];
+        if (contains(candidates, value))
+        {
+            points.emplace_back(row, c);
+        }
+    }
+
+    return points;
+}
+
+std::vector<MatrixPoint<unsigned>> get_occurrences_in_column(
+        SudokuGrid::value_type value,
+        const Solver::candidate_digit_collection& candidateDigits,
+        size_t column)
+{
+    assert(column < candidateDigits.columns());
+
+    std::vector<MatrixPoint<unsigned>> points;
+    for (unsigned r = 0; r < candidateDigits.rows(); ++r)
+    {
+        const auto& candidates = candidateDigits[r][column];
+        if (contains(candidates, value))
+        {
+            points.emplace_back(r, column);
         }
     }
 
@@ -190,6 +233,33 @@ bool are_on_the_same_column(const std::vector<MatrixPoint<unsigned>>& points)
 
     const auto column = first->Column;
     return std::all_of(std::next(first), last, [column](const auto& p) { return p.Column == column; });
+}
+
+void print_candidates(const Solver::candidate_digit_collection& candidates)
+{
+    SudokuGrid g;
+
+    constexpr auto maxDigit = static_cast<char>(SudokuGrid::rows());
+    for (char digit = 1; digit <= maxDigit; ++digit)
+    {
+
+        size_t candidateCount = 0;
+        for (unsigned r = 0; r < candidates.rows(); ++r)
+        {
+            for (unsigned c = 0; c < candidates.columns(); ++c)
+            {
+                g[r][c] = (contains(candidates[r][c], digit) * digit);
+                candidateCount += (g[r][c] != 0);
+            }
+        }
+
+        if (candidateCount > 0)
+        {
+            printf("Possible positions of '%c':\n", digit + 48);
+            print_grid(g);
+            puts("");
+        }
+    }
 }
 
 }
@@ -270,10 +340,16 @@ bool Solver::exec()
                             }
                         }
 
-                        const auto occurrenceCount = gridOccurrences.size();
-                        assert(occurrenceCount > 0);
+                        const auto gridOccurrenceCount = gridOccurrences.size();
+                        assert(gridOccurrenceCount > 0);
 
-                        if (1 == occurrenceCount)
+                        //const auto rowOccurrenceCount = get_occurrences_in_row(cellValue, this->CandidateDigits_, r).size();
+                        //assert(rowOccurrenceCount > 0);
+
+                        //const auto columnOccurrenceCount = get_occurrences_in_column(cellValue, this->CandidateDigits_, c).size();
+                        //assert(columnOccurrenceCount > 0);
+
+                        if (1 == gridOccurrenceCount) // || 1 == rowOccurrenceCount || 1 == columnOccurrenceCount)
                         {
                             // This cell is now fixed.
                             this->CandidateDigits_[r][c].clear();
@@ -292,6 +368,8 @@ bool Solver::exec()
         ++(this->Iterations_);
     }
     while(0 != inserted);
+
+    print_candidates(this->CandidateDigits_);
 
     return this->InsertedDigits_ == this->NumberOfMissingDigits_;
 }
