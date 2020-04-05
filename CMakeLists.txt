@@ -14,4 +14,9 @@ add_executable(
     Validator.cpp
     main.cpp)
 
-target_compile_options(SudokuSolver PRIVATE -Wall -Wextra -pedantic)
+target_compile_options(SudokuSolver
+    PRIVATE
+    -Wall
+    -Wextra
+    -Wzero-as-null-pointer-constant
+    -pedantic)
