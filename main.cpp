@@ -2,6 +2,12 @@
 #include "Solver.h"
 #include "Validator.h"
 
+void print_validation_status(bool status)
+{
+    auto output = status ? stdout : stderr;
+    fprintf(output, "Validation [1: success, 0: failure]: %d.\n", status);
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 2)
@@ -17,9 +23,15 @@ int main(int argc, char *argv[])
 
     print_grid(grid);
 
+    const auto inputValid = Validator(grid).validate();
+    print_validation_status(inputValid);
+    if (!inputValid)
+        return 1;
+
     Solver solver(grid);
     solver.exec();
 
+    puts("");
     puts("Solved:");
     print_grid(grid);
 
@@ -28,8 +40,6 @@ int main(int argc, char *argv[])
            solver.originalNumberOfMissingDigits(),
            solver.iterations());
 
-    printf("Solution validation [1: success, 0: failure]: %d.\n",
-           Validator(grid).validate());
-
+    print_validation_status(Validator(grid).validate());
     return 0;
 }
