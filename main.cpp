@@ -1,9 +1,3 @@
-#include <algorithm>
-#include <cassert>
-#include <iostream>
-#include <set>
-#include <vector>
-
 #include "Matrix.h"
 #include "Solver.h"
 

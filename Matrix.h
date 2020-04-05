@@ -103,12 +103,12 @@ public:
 
     reference operator[](const point_type& p)
     {
-        (*this)[p.Row][p.Column];
+        return (*this)[p.Row][p.Column];
     }
 
     const_reference operator[](const point_type& p) const
     {
-        (*this)[p.Row][p.Column];
+        return (*this)[p.Row][p.Column];
     }
 
 private:
