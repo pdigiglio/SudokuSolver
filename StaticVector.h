@@ -57,7 +57,7 @@ public:
     {
         const auto position = std::distance(std::cbegin(*this), it);
         assert(position >= 0);
-        assert(position <= this->size());
+        assert(static_cast<size_t>(position) <= this->size());
 
         auto targetBegin = std::next(std::begin(*this), position);
         const auto srcLast = std::cend(*this);

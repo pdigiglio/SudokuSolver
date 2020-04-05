@@ -18,14 +18,14 @@ struct Comparer
 
 template <
     unsigned i,
-    template <unsigned> typename IFunction,
+    template <unsigned> class IFunction,
     unsigned Value,
     Compare c>
 struct EqualFinder;
 
 template <
     unsigned i,
-    template <unsigned> typename IFunction,
+    template <unsigned> class IFunction,
     unsigned Value
 >
 struct EqualFinder<i, IFunction, Value, Compare::Equal>
@@ -35,7 +35,7 @@ struct EqualFinder<i, IFunction, Value, Compare::Equal>
 
 template <
     unsigned i,
-    template <unsigned> typename IFunction,
+    template <unsigned> class IFunction,
     unsigned Value>
 struct EqualFinder<i, IFunction, Value, Compare::Less>
 {
@@ -49,7 +49,7 @@ struct EqualFinder<i, IFunction, Value, Compare::Less>
 };
 
 template <
-    template <unsigned> typename IFunction,
+    template <unsigned> class IFunction,
     unsigned Value>
 struct InverseEvaluator
 {
@@ -61,3 +61,13 @@ struct InverseEvaluator
             Comparer<IFunction<0>::value, Value>::value
         >::value;
 };
+
+template <unsigned i>
+struct Square
+{
+    static constexpr auto value = i * i;
+};
+
+template <unsigned i>
+struct Sqrt : public InverseEvaluator<Square, i>
+{ };

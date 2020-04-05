@@ -7,7 +7,10 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt5 COMPONENTS Widgets REQUIRED)
-
-add_executable(SudokuSolver
+add_executable(
+    SudokuSolver
+    Matrix.cpp
+    Solver.cpp
     main.cpp)
+
+target_compile_options(SudokuSolver PRIVATE -Wall -Wextra -pedantic)
