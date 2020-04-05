@@ -110,51 +110,113 @@ std::vector<SudokuGrid::value_type> get_candidates(StaticVector<SudokuGrid::valu
     return missing;
 }
 
+template <typename Container, typename T>
+void erase_value(Container& container, const T& value)
+{
+    const auto first = std::begin(container);
+    const auto last = std::end(container);
+    const auto it = std::find(first, last, value);
+    container.erase(it);
+}
+
+void remove_from_candidate_row(
+        SudokuGrid::value_type value,
+        Solver::candidate_digit_collection& candidateDigits,
+        size_t row)
+{
+    matrix_row_for_each(candidateDigits, row, [value](auto& digits) { erase_value(digits, value); });
+}
+
+void remove_from_candidate_column(
+        SudokuGrid::value_type value,
+        Solver::candidate_digit_collection& candidateDigits,
+        size_t column)
+{
+    matrix_column_for_each(candidateDigits, column, [value](auto& digits) { erase_value(digits, value); });
+}
+
 void remove_from_candidates(
         char value,
         Matrix<StaticVector<char, SudokuGrid::rows()>, SudokuGrid::rows(), SudokuGrid::columns()>& missingDigits,
         size_t row,
         size_t column)
 {
-    using missing_container = StaticVector<char, SudokuGrid::rows()>;
-    auto removeValue = [value](missing_container& missing)
-    {
-        const auto first = std::begin(missing);
-        const auto last = std::end(missing);
-        const auto it = std::find(first, last, value);
-        missing.erase(it);
-    };
-
-    matrix_row_for_each(missingDigits, row, removeValue);
-    matrix_column_for_each(missingDigits, column, removeValue);
-    sudoku_subgrid_for_each(missingDigits, row, column, removeValue);
+    remove_from_candidate_row(value, missingDigits, row);
+    remove_from_candidate_column(value, missingDigits, column);
+    sudoku_subgrid_for_each(missingDigits, row, column, [value](auto& digits) { erase_value(digits, value); });
 }
 
-struct OccurrenceCounter
-{
-    size_t Occurrences = 0;
-    SudokuGrid::value_type Value;
+//struct OccurrenceCounter
+//{
+//    size_t Occurrences = 0;
+//    SudokuGrid::value_type Value;
+//
+//    explicit OccurrenceCounter(SudokuGrid::value_type value)
+//        :
+//          Occurrences(0),
+//          Value(value)
+//    { }
+//
+//    void operator()(const Solver::cell_digit_collection& container)
+//    {
+//        this->Occurrences += contains(container, this->Value);
+//    }
+//};
 
-    explicit OccurrenceCounter(SudokuGrid::value_type value)
-        :
-          Occurrences(0),
-          Value(value)
-    { }
+//size_t count_occurrences_in_grid(
+//        char value,
+//        const Matrix<StaticVector<char, SudokuGrid::rows()>, SudokuGrid::rows(), SudokuGrid::columns()>& candidateDigits,
+//        size_t row,
+//        size_t column)
+//{
+//    auto counter = sudoku_subgrid_for_each(candidateDigits, row, column, OccurrenceCounter(value));
+//    return counter.Occurrences;
+//}
 
-    void operator()(const Solver::cell_digit_collection& container)
-    {
-        this->Occurrences += contains(container, this->Value);
-    }
-};
-
-size_t count_occurrences_in_grid(
+std::vector<MatrixPoint<unsigned>> get_occurrences_in_grid(
         char value,
         const Matrix<StaticVector<char, SudokuGrid::rows()>, SudokuGrid::rows(), SudokuGrid::columns()>& candidateDigits,
         size_t row,
         size_t column)
 {
-    auto counter = sudoku_subgrid_for_each(candidateDigits, row, column, OccurrenceCounter(value));
-    return counter.Occurrences;
+    constexpr auto subgridSideLength = Sqrt<SudokuGrid::rows()>::value;
+    const auto rowStart = subgridSideLength * (row / subgridSideLength);
+    const auto columnStart = subgridSideLength * (column / subgridSideLength);
+
+    std::vector<MatrixPoint<unsigned>> points;
+    for (unsigned r = rowStart; r < rowStart + subgridSideLength; ++r)
+    {
+        for (unsigned c = columnStart; c < columnStart + subgridSideLength; ++c)
+        {
+            const auto& candidates = candidateDigits[r][c];
+            if (contains(candidates, value))
+            {
+                points.emplace_back(r, c);
+            }
+        }
+    }
+
+    return points;
+}
+
+bool are_on_the_same_row(const std::vector<MatrixPoint<unsigned>>& points)
+{
+    const auto first = std::cbegin(points);
+    const auto last = std::cend(points);
+    assert(first != last);
+
+    const auto row = first->Row;
+    return std::all_of(std::next(first), last, [row](const auto& p) { return p.Row == row; });
+}
+
+bool are_on_the_same_column(const std::vector<MatrixPoint<unsigned>>& points)
+{
+    const auto first = std::cbegin(points);
+    const auto last = std::cend(points);
+    assert(first != last);
+
+    const auto column = first->Column;
+    return std::all_of(std::next(first), last, [column](const auto& p) { return p.Column == column; });
 }
 
 //size_t count_occurrences_in_row(
@@ -219,13 +281,13 @@ bool Solver::exec()
         {
             for (size_t c = 0; c < SudokuGrid::columns(); ++c)
             {
-                auto& cellCandidates = this->CandidateDigits_[r][c];
+                const auto cellCandidates = this->CandidateDigits_[r][c];
                 if (1 == cellCandidates.size())
                 {
                     const auto cellValue = cellCandidates[0];
 
                     // This cell is now fixed
-                    cellCandidates.clear();
+                    this->CandidateDigits_[r][c].clear();
                     remove_from_candidates(cellValue, this->CandidateDigits_, r, c);
                     (*this->Grid_)[r][c] = cellValue;
 
@@ -235,25 +297,71 @@ bool Solver::exec()
                 {
                     for (const auto cellValue : cellCandidates)
                     {
-                        const auto gridOccurrences = count_occurrences_in_grid(cellValue, this->CandidateDigits_, r, c);
-                        assert(gridOccurrences > 0);
+                        const auto gridOccurrences = get_occurrences_in_grid(cellValue, this->CandidateDigits_, r, c);
+                        if (are_on_the_same_row(gridOccurrences))
+                        {
+                            //printf("On the same row: (row=%zu, column=%zu, value=%c)\n", r, c, cellValue + '0');
+                            remove_from_candidate_row(cellValue, this->CandidateDigits_, r);
+                            for (const auto& gridOccurrence : gridOccurrences)
+                            {
+                                this->CandidateDigits_[gridOccurrence].push_back(cellValue);
+                            }
+                        }
+                        else if (are_on_the_same_row(gridOccurrences))
+                        {
+                            //printf("On the same column: (row=%zu, column=%zu, value=%c)\n", r, c, cellValue +'0');
+                            remove_from_candidate_column(cellValue, this->CandidateDigits_, c);
+                            for (const auto& gridOccurrence : gridOccurrences)
+                            {
+                                this->CandidateDigits_[gridOccurrence].push_back(cellValue);
+                            }
+                        }
 
-                        //const auto rowOccurrences = count_occurrences_in_row(value, this->CandidateDigits_, r);
-                        //assert(rowOccurrences > 0);
+                        const auto occurrenceCount = gridOccurrences.size();
+                        assert(occurrenceCount > 0);
 
-                        //const auto columnOccurrences = count_occurrences_in_column(value, this->CandidateDigits_, c);
-                        //assert(columnOccurrences > 0);
-
-                        if (1 == gridOccurrences) // || 1 == rowOccurrences || 1 == columnOccurrences)
+                        if (1 == occurrenceCount)
                         {
                             // This cell is now fixed.
-                            cellCandidates.clear();
+                            this->CandidateDigits_[r][c].clear();
                             remove_from_candidates(cellValue, this->CandidateDigits_, r, c);
                             (*this->Grid_)[r][c] = cellValue;
 
                             ++inserted;
                             break;
                         }
+
+                        //const auto gridOccurrences = count_occurrences_in_grid(cellValue, this->CandidateDigits_, r, c);
+                        //assert(gridOccurrences > 0);
+
+                        ////const auto rowOccurrences = count_occurrences_in_row(value, this->CandidateDigits_, r);
+                        ////assert(rowOccurrences > 0);
+
+                        ////const auto columnOccurrences = count_occurrences_in_column(value, this->CandidateDigits_, c);
+                        ////assert(columnOccurrences > 0);
+
+                        //if (1 == gridOccurrences) // || 1 == rowOccurrences || 1 == columnOccurrences)
+                        //{
+                        //    // This cell is now fixed.
+                        //    cellCandidates.clear();
+                        //    remove_from_candidates(cellValue, this->CandidateDigits_, r, c);
+                        //    (*this->Grid_)[r][c] = cellValue;
+
+                        //    ++inserted;
+                        //    break;
+                        //}
+                        //else
+                        //{
+                        //    const auto o = get_occurrences_in_grid(cellValue, this->CandidateDigits_, r, c);
+                        //    if (are_on_the_same_row(o))
+                        //    {
+                        //        printf("On the same row: (row=%zu, column=%zu, value=%c)\n", r, c, cellValue + '0');
+                        //    }
+                        //    else if (are_on_the_same_column(o))
+                        //    {
+                        //        printf("On the same column: (row=%zu, column=%zu, value=%c)\n", r, c, cellValue +'0');
+                        //    }
+                        //}
                     }
                 }
             }
