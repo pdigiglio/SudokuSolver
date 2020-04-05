@@ -30,7 +30,13 @@ bool Validator::validate()
     using cell_type = SudokuGrid::value_type;
     StaticVector<cell_type, SudokuGrid::rows()> digits;
 
-    auto digitAppender = [&digits](cell_type cellValue) { digits.push_back(cellValue); };
+    auto digitAppender = [&digits](cell_type cellValue)
+    {
+        if (0 != cellValue)
+        {
+            digits.push_back(cellValue);
+        }
+    };
 
     for (unsigned r = 0; r < SudokuGrid::rows(); ++r)
     {
