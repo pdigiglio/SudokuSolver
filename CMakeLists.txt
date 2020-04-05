@@ -11,6 +11,7 @@ add_executable(
     SudokuSolver
     Matrix.cpp
     Solver.cpp
+    Validator.cpp
     main.cpp)
 
 target_compile_options(SudokuSolver PRIVATE -Wall -Wextra -pedantic)

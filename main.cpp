@@ -1,5 +1,6 @@
 #include "Matrix.h"
 #include "Solver.h"
+#include "Validator.h"
 
 int main(int argc, char *argv[])
 {
@@ -22,10 +23,13 @@ int main(int argc, char *argv[])
     puts("Solved:");
     print_grid(grid);
 
-    printf("Inserted %u (of %u) elements in %u iterations.\n",
+    printf("Inserted %u (of %u) elements in %u iteration(s).\n",
            solver.insertedDigits(),
            solver.originalNumberOfMissingDigits(),
            solver.iterations());
+
+    printf("Solution validation [1: success, 0: failure]: %d.\n",
+           Validator(grid).validate());
 
     return 0;
 }
