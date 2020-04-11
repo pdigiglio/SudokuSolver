@@ -8,8 +8,9 @@ branches:
     - master
 
 before_script:
-  - cmake -S . -B build
+  - mkdir build && cd build
+  - cmake ..
 
 script:
-  - cmake --build build --parallel --target test
-  - ./build/test/test
+  - make -j test
+  - ./test/test
