@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.8)
 
 project(SudokuSolver LANGUAGES CXX)
 
@@ -10,9 +10,6 @@ endif()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 #find_program(CMAKE_CXX_CPPCHECK NAMES cppcheck)
 #if (CMAKE_CXX_CPPCHECK)
 #    list(APPEND CMAKE_CXX_CPPCHECK
@@ -21,6 +18,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #        "--suppress=unusedFunction"
 #        "--inconclusive")
 #endif()
+
 
 add_executable(
     SudokuSolver
@@ -35,3 +33,17 @@ target_compile_options(SudokuSolver
     -Wextra
     -Wzero-as-null-pointer-constant
     -pedantic)
+
+target_compile_features(SudokuSolver
+    PUBLIC cxx_std_14)
+
+set_target_properties(SudokuSolver
+    PROPERTIES
+    CXX_EXTENSIONS OFF
+    CXX_STANDARD_REQUIRED ON)
+
+#include(CMakePrintHelpers)
+#cmake_print_properties(
+#    TARGETS SudokuSolver
+#    PROPERTIES CXX_EXTENSIONS CXX_STANDARD_REQUIRED CXX_STANDARD)
+
