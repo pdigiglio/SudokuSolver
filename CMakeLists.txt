@@ -19,6 +19,33 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #        "--inconclusive")
 #endif()
 
+include(CMakePrintHelpers)
+
+find_package(Git QUIET)
+if (GIT_FOUND)
+
+    # Make sure I'm in a Git repository.
+    if (EXISTS "${PROJECT_SOURCE_DIR}/.git")
+
+        option(GIT_SUBMODULE "Check git submodules at build time" ON)
+        if (GIT_SUBMODULE)
+
+            message(STATUS "Updating git submodules")
+            execute_process(
+                COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                RESULT_VARIABLE GIT_SUBMODULE_RESULT)
+
+            #cmake_print_variables(CMAKE_CURRENT_SOURCE_DIR GIT_SUBMODULE_RESULT)
+            if (NOT GIT_SUBMODULE_RESULT EQUAL "0")
+                message(FATAL_ERROR "Updating git submodules failed with error ${GIT_SUBMODULE_RESULT}. Please update submodules.")
+            endif()
+
+        endif()
+    endif()
+endif()
+
+add_subdirectory(test)
 
 add_executable(
     SudokuSolver
@@ -42,7 +69,6 @@ set_target_properties(SudokuSolver
     CXX_EXTENSIONS OFF
     CXX_STANDARD_REQUIRED ON)
 
-#include(CMakePrintHelpers)
 #cmake_print_properties(
 #    TARGETS SudokuSolver
 #    PROPERTIES CXX_EXTENSIONS CXX_STANDARD_REQUIRED CXX_STANDARD)
