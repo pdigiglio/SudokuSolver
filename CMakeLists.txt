@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.5)
 
 project(SudokuSolver LANGUAGES CXX)
 
+# Require out-of-source build
+file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOC_PATH)
+if (EXISTS "${LOC_PATH}")
+    message(FATAL_ERROR "You cannot build in a source directory")
+endif()
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_CXX_STANDARD 14)
