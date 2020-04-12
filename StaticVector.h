@@ -105,3 +105,10 @@ private:
     std::array<T, Capacity> Data_;
     size_t Size_;
 };
+
+template <typename T, size_t Capacity>
+bool operator==(const StaticVector<T, Capacity>& lhs, const StaticVector<T, Capacity>& rhs)
+{
+    return  lhs.size() == rhs.size() &&
+            std::equal(std::cbegin(lhs), std::cend(lhs), std::cbegin(rhs));
+}
