@@ -235,6 +235,15 @@ bool are_on_the_same_column(const std::vector<MatrixPoint<unsigned>>& points)
     return std::all_of(std::next(first), last, [column](const auto& p) { return p.Column == column; });
 }
 
+void print_cell_candidates(const Solver::cell_digit_collection& candidates)
+{
+    for (auto candidate : candidates)
+    {
+        printf("%c ", candidate + 48);
+    }
+    printf("\n");
+}
+
 void print_candidates(const Solver::candidate_digit_collection& candidates)
 {
     SudokuGrid g;
@@ -260,6 +269,52 @@ void print_candidates(const Solver::candidate_digit_collection& candidates)
             puts("");
         }
     }
+}
+
+std::vector<MatrixPoint<unsigned>> unsolved_cells_in_this_grid_row(
+       const Solver::candidate_digit_collection& candidates,
+       size_t row,
+       size_t column)
+{
+    const size_t gridColumnStart = 3 * (column / 3);
+    const size_t gridColumnEnd = gridColumnStart + 3;
+
+    std::vector<MatrixPoint<unsigned>> unsolved;
+    unsolved.reserve(3);
+
+    for (size_t c = gridColumnStart; c < gridColumnEnd; ++c)
+    {
+        const auto& cellCandidates = candidates[row][c];
+        if (0 != cellCandidates.size())
+        {
+            unsolved.emplace_back(row, c);
+        }
+    }
+
+    return unsolved;
+}
+
+std::vector<MatrixPoint<unsigned>> unsolved_cells_in_this_grid_column(
+       const Solver::candidate_digit_collection& candidates,
+       size_t row,
+       size_t column)
+{
+    const size_t rowColumnStart = 3 * (row / 3);
+    const size_t rowColumnEnd = rowColumnStart + 3;
+
+    std::vector<MatrixPoint<unsigned>> unsolved;
+    unsolved.reserve(3);
+
+    for (size_t r = rowColumnStart; r < rowColumnEnd; ++r)
+    {
+        const auto& cellCandidates = candidates[r][column];
+        if (0 != cellCandidates.size())
+        {
+            unsolved.emplace_back(r, column);
+        }
+    }
+
+    return unsolved;
 }
 
 }
@@ -306,7 +361,31 @@ bool Solver::exec()
         {
             for (size_t c = 0; c < SudokuGrid::columns(); ++c)
             {
+
                 const auto cellCandidates = this->CandidateDigits_[r][c];
+
+                {
+                    //const auto cellCandidates = this->CandidateDigits_[r][c];
+                    const auto rc = unsolved_cells_in_this_grid_row(this->CandidateDigits_, r, c);
+                    if (rc.size() != 0 && rc.size() == cellCandidates.size())
+                    {
+                        const auto constained = std::all_of(std::cbegin(rc), std::cend(rc),
+                                            [&cellCandidates, this](const auto& occurrence){ return cellCandidates == CandidateDigits_[occurrence]; });
+
+                        if (constained)
+                        {
+                            for (const auto cellValue : cellCandidates)
+                            {
+                                remove_from_candidate_row(cellValue, this->CandidateDigits_, r);
+                                for (const auto& occurrence : rc)
+                                {
+                                    this->CandidateDigits_[occurrence].push_back(cellValue);
+                                }
+                            }
+                        }
+                    }
+                }
+
                 if (1 == cellCandidates.size())
                 {
                     const auto cellValue = cellCandidates[0];
@@ -320,6 +399,7 @@ bool Solver::exec()
                 }
                 else if (cellCandidates.size() > 1)
                 {
+
                     for (const auto cellValue : cellCandidates)
                     {
                         const auto gridOccurrences = get_occurrences_in_grid(cellValue, this->CandidateDigits_, r, c);
@@ -369,7 +449,16 @@ bool Solver::exec()
     }
     while(0 != inserted);
 
-    print_candidates(this->CandidateDigits_);
+    //print_candidates(this->CandidateDigits_);
+    //for (int c = 0; c < 9; ++c)
+    //{
+    //    const auto& candidates = this->CandidateDigits_[8][c];
+    //    if (candidates.size())
+    //    {
+    //        printf("Missing on cell (%d, %d)\n:", 9, c+1);
+    //        print_cell_candidates(candidates);
+    //    }
+    //}
 
     return this->InsertedDigits_ == this->NumberOfMissingDigits_;
 }
