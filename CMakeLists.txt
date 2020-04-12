@@ -8,8 +8,6 @@ if (EXISTS "${LOC_PATH}")
     message(FATAL_ERROR "You cannot build in a source directory")
 endif()
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
 #find_program(CMAKE_CXX_CPPCHECK NAMES cppcheck)
 #if (CMAKE_CXX_CPPCHECK)
 #    list(APPEND CMAKE_CXX_CPPCHECK
@@ -20,6 +18,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #endif()
 
 include(CMakePrintHelpers)
+include(CTest)
 
 find_package(Git QUIET)
 if (GIT_FOUND)
@@ -45,29 +44,40 @@ if (GIT_FOUND)
     endif()
 endif()
 
-add_subdirectory(test)
 
-add_executable(
-    SudokuSolver
+add_library(SudokuSolverLib
+    STATIC
     Matrix.cpp
     Solver.cpp
-    Validator.cpp
-    main.cpp)
+    Validator.cpp)
 
-target_compile_options(SudokuSolver
+target_include_directories(SudokuSolverLib
+    PUBLIC "${PROJECT_SOURCE_DIR}")
+
+target_compile_options(SudokuSolverLib
     PRIVATE
     -Wall
     -Wextra
     -Wzero-as-null-pointer-constant
     -pedantic)
 
-target_compile_features(SudokuSolver
+target_compile_features(SudokuSolverLib
     PUBLIC cxx_std_14)
 
-set_target_properties(SudokuSolver
+set_target_properties(SudokuSolverLib
     PROPERTIES
     CXX_EXTENSIONS OFF
     CXX_STANDARD_REQUIRED ON)
+
+if (BUILD_TESTING)
+    add_subdirectory(test)
+endif()
+
+add_executable(
+    SudokuSolver
+    main.cpp)
+
+target_link_libraries(SudokuSolver PRIVATE SudokuSolverLib)
 
 #cmake_print_properties(
 #    TARGETS SudokuSolver
