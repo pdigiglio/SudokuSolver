@@ -9,6 +9,8 @@
 
 void solve_grid(const char* inputFileName)
 {
+    printf("Solving: '%s'\n", inputFileName);
+
     SudokuGrid grid;
     const auto readStatus = fill_from_input_file(inputFileName, grid);
     REQUIRE(readStatus);
@@ -47,6 +49,11 @@ TEST_CASE("non-regression")
     SUBCASE("solve hard grid")
     {
         solve_grid("../../data/hard_input.txt");
+    }
+
+    SUBCASE("solve evil grid")
+    {
+        solve_grid("../../data/evil_input.txt");
     }
 }
 
