@@ -3,8 +3,9 @@
 #include "BacktrackingSolver.h"
 #include "Validator.h"
 
-#include <cstdio>
+#include <algorithm>
 #include <chrono>
+#include <cstdio>
 
 bool print_validation_status(const SudokuGrid& grid)
 {
@@ -37,6 +38,19 @@ int main(int argc, char *argv[])
         return 1;
 
     print_grid(grid);
+
+    puts("Row-iterator test");
+    std::for_each(grid.row_cbegin(4), grid.row_cend(4), [](auto& v) { printf("%c ", v + 48); });
+    printf("\n");
+
+    puts("Col-iterator test");
+    std::for_each(grid.column_begin(0), grid.column_end(0), [](auto& v) { printf("%c ", v + 48); });
+    printf("\n");
+
+    puts("Subgrid-iterator test");
+    std::for_each(grid.subgrid_begin<3,3>(3,0), grid.subgrid_end<3,3>(3,0), [](auto& v) { printf("%c ", v + 48); });
+    printf("\n");
+
 
     const auto inputValid = print_validation_status(grid);
     if (!inputValid)
