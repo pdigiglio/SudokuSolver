@@ -43,7 +43,11 @@ bool Validator::validate()
         digits.clear();
         matrix_row_for_each(*this->Grid_, r, digitAppender);
         if (has_duplicates(digits))
+        {
+            this->DuplicateType_ = "row";
+            this->DuplicateIndex_ = r;
             return false;
+        }
     }
 
     for (unsigned c = 0; c < SudokuGrid::columns(); ++c)
@@ -51,8 +55,22 @@ bool Validator::validate()
         digits.clear();
         matrix_column_for_each(*this->Grid_, c, digitAppender);
         if (has_duplicates(digits))
+        {
+            this->DuplicateType_ = "col";
+            this->DuplicateIndex_ = c;
             return false;
+        }
     }
 
     return true;
+}
+
+const char* Validator::type() const
+{
+    return this->DuplicateType_;
+}
+
+int Validator::index() const
+{
+    return this->DuplicateIndex_;
 }

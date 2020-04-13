@@ -47,6 +47,7 @@ endif()
 
 add_library(SudokuSolverLib
     STATIC
+    BacktrackingSolver.cpp
     Matrix.cpp
     Solver.cpp
     Validator.cpp)

@@ -16,7 +16,13 @@ public:
     ~Validator() = default;
 
     bool validate();
+    const char* type() const;
+    int index() const;
 
 private:
     const SudokuGrid* Grid_;
+
+    // either "row" or "col"
+    const char* DuplicateType_ = "";
+    int DuplicateIndex_ = -1;
 };
