@@ -54,12 +54,19 @@ add_library(SudokuSolverLib
 target_include_directories(SudokuSolverLib
     PUBLIC "${PROJECT_SOURCE_DIR}")
 
-target_compile_options(SudokuSolverLib
-    PRIVATE
-    -Wall
-    -Wextra
-    -Wzero-as-null-pointer-constant
-    -pedantic)
+if (MSVC)
+	target_compile_options(SudokuSolverLib
+		PRIVATE
+		/W4)
+else()
+	target_compile_options(SudokuSolverLib
+		PRIVATE
+		-Wall
+		-Wextra
+		-Wzero-as-null-pointer-constant
+		-pedantic)
+endif()
+
 
 target_compile_features(SudokuSolverLib
     PUBLIC cxx_std_14)
