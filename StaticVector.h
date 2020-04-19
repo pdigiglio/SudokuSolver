@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cassert>
+#include <cstddef>
 
 template <typename T, size_t Capacity>
 class StaticVector

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "fwd/Matrix.h"
+#include "fwd/SudokuGrid.h"
 
 class Validator final
 {

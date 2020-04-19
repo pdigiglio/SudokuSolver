@@ -1,6 +1,7 @@
+#include "BacktrackingSolver.h"
+#include "ConstrainSolver.h"
 #include "Matrix.h"
 #include "Solver.h"
-#include "BacktrackingSolver.h"
 #include "Validator.h"
 
 #include <algorithm>
@@ -21,9 +22,6 @@ bool print_validation_status(const SudokuGrid& grid)
     return status;
 }
 
-template <typename T>
-class TD;
-
 int main(int argc, char *argv[])
 {
     if (argc != 2)
@@ -39,26 +37,24 @@ int main(int argc, char *argv[])
 
     print_grid(grid);
 
-    puts("Row-iterator test");
-    std::for_each(grid.row_cbegin(4), grid.row_cend(4), [](auto& v) { printf("%c ", v + 48); });
-    printf("\n");
+    //std::for_each(grid.row_cbegin(0), grid.row_cend(0), [](char c) { printf("%c ", c + 48); } );
+    //puts("");
 
-    puts("Col-iterator test");
-    std::for_each(grid.column_begin(0), grid.column_end(0), [](auto& v) { printf("%c ", v + 48); });
-    printf("\n");
+    //std::for_each(grid.column_cbegin(3), grid.column_cend(3), [](char c) { printf("%c ", c + 48); } );
+    //puts("");
 
-    puts("Subgrid-iterator test");
-    std::for_each(grid.subgrid_begin<3,3>(3,0), grid.subgrid_end<3,3>(3,0), [](auto& v) { printf("%c ", v + 48); });
-    printf("\n");
+    //std::for_each(grid.subgrid_cbegin<3, 6>(0,0), grid.subgrid_cend<3,6>(0,0), [](char c) { printf("%c ", c + 48); } );
+    //puts("");
 
+    //return 0;
 
     const auto inputValid = print_validation_status(grid);
     if (!inputValid)
         return 1;
 
     const auto start = std::chrono::steady_clock::now();
-    //Solver solver(grid);
-    BacktrackingSolver solver(grid);
+    ConstrainSolver solver(grid);
+    //BacktrackingSolver solver(grid);
     solver.exec();
     const auto end = std::chrono::steady_clock::now();
 
@@ -67,7 +63,8 @@ int main(int argc, char *argv[])
     print_grid(grid);
 
     printf("Inserted %u (of %u) elements in %u iteration(s).\n",
-           solver.insertedDigits(), 0, 0);
+           solver.insertedDigits(),
+           solver.originalNumberOfMissingDigits(), 0);
 
     const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     printf("Solution took %ld ms.\n", elapsed.count());

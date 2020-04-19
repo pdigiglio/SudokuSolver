@@ -48,8 +48,10 @@ endif()
 add_library(SudokuSolverLib
     STATIC
     BacktrackingSolver.cpp
+    ConstrainSolver.cpp
     Matrix.cpp
     Solver.cpp
+    SudokuGrid.cpp
     Validator.cpp)
 
 target_include_directories(SudokuSolverLib

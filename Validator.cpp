@@ -1,7 +1,8 @@
 #include "Validator.h"
 
-#include "Matrix.h"
 #include "StaticVector.h"
+#include "SudokuGrid.h"
+#include "constexpr_functions.h"
 
 #include <algorithm>
 
@@ -23,26 +24,29 @@ bool has_duplicates(Container& container)
     return it != last;
 }
 
+template <typename InputIterator>
+bool has_duplicate_non_empty_cells(InputIterator beginCell, InputIterator endCell)
+{
+    using cell_type = SudokuGrid::value_type;
+    StaticVector<cell_type, SudokuGrid::rows()> nonEmptyDigits;
+
+    auto outputIterator = std::back_inserter(nonEmptyDigits);
+    std::copy_if(beginCell, endCell, outputIterator,
+         [](const cell_type& value) { return 0 != value; });
+
+    return has_duplicates(nonEmptyDigits);
+}
+
 }
 
 bool Validator::validate()
 {
-    using cell_type = SudokuGrid::value_type;
-    StaticVector<cell_type, SudokuGrid::rows()> digits;
-
-    auto digitAppender = [&digits](cell_type cellValue)
-    {
-        if (0 != cellValue)
-        {
-            digits.push_back(cellValue);
-        }
-    };
-
     for (unsigned r = 0; r < SudokuGrid::rows(); ++r)
     {
-        digits.clear();
-        matrix_row_for_each(*this->Grid_, r, digitAppender);
-        if (has_duplicates(digits))
+        const auto rowHasDuplicates = has_duplicate_non_empty_cells(
+                    this->Grid_->row_cbegin(r), this->Grid_->row_cend(r));
+
+        if (rowHasDuplicates)
         {
             this->DuplicateType_ = "row";
             this->DuplicateIndex_ = r;
@@ -52,13 +56,31 @@ bool Validator::validate()
 
     for (unsigned c = 0; c < SudokuGrid::columns(); ++c)
     {
-        digits.clear();
-        matrix_column_for_each(*this->Grid_, c, digitAppender);
-        if (has_duplicates(digits))
+        const auto columnHasDUplicates = has_duplicate_non_empty_cells(
+                    this->Grid_->column_cbegin(c), this->Grid_->column_cend(c));
+        if (columnHasDUplicates)
         {
             this->DuplicateType_ = "col";
             this->DuplicateIndex_ = c;
             return false;
+        }
+    }
+
+    constexpr auto subgridSide = Sqrt<SudokuGrid::rows()>::value;
+    for (unsigned r = 0; r < SudokuGrid::rows(); r += subgridSide)
+    {
+        for (unsigned c = 0; c < SudokuGrid::columns(); c += subgridSide)
+        {
+            const auto gridHasDuplicates = has_duplicate_non_empty_cells(
+                        this->Grid_->subgrid_cbegin<subgridSide, subgridSide>(r, c),
+                        this->Grid_->subgrid_cend<subgridSide, subgridSide>(r, c));
+
+            if (gridHasDuplicates)
+            {
+                this->DuplicateType_ = "grd";
+                this->DuplicateIndex_ = r * 10 + c;
+                return false;
+            }
         }
     }
 

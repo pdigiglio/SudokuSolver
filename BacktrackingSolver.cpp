@@ -1,8 +1,7 @@
 #include "BacktrackingSolver.h"
 
 BacktrackingSolver::BacktrackingSolver(SudokuGrid& grid)
-    :
-      Grid_(&grid)
+    : Grid_(&grid)
 { }
 
 namespace
