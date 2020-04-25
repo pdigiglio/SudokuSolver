@@ -1,12 +1,13 @@
 #pragma once
 
-#include "fwd/Matrix.h"
-
 #include "MatrixPoint.h"
-#include "Tag.h"
 
 #include <array>
 #include <cassert>
+#include <cstddef>
+#include <iterator>
+#include <type_traits>
+#include <utility>
 
 template <size_t i, typename T, size_t N, typename U>
 void set_data_impl(std::array<T, N>& data, U&& arg0)

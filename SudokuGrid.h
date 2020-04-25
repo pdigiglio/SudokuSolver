@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Matrix.h"
+#include "Matrix.h" // IWYU pragma: export
 
 class SudokuGrid final : public Matrix<char, 9, 9>
 {

@@ -1,5 +1,8 @@
 #include "BacktrackingSolver.h"
 
+#include <cassert>
+#include <cstddef>
+
 BacktrackingSolver::BacktrackingSolver(SudokuGrid& grid)
     : Grid_(&grid)
 { }

@@ -1,5 +1,9 @@
 #pragma once
 
+#include "fwd/SudokuGrid.h" // IWYU pragma: keep
+// IWYU pragma: no_include "SudokuGrid.h"
+
+#include "Matrix.h" // IWYU pragma: keep
 #include "Solver.h"
 #include "StaticVector.h"
 

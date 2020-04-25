@@ -2,6 +2,8 @@
 
 #include "constexpr_functions.h"
 
+#include <cassert>
+#include <cstdio>
 #include <fstream>
 
 bool fill_from_input_file(const char* filePath, SudokuGrid& grid)

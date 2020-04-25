@@ -1,10 +1,13 @@
 #include "ConstrainSolver.h"
 
+#include "MatrixPoint.h"
 #include "StaticVector.h"
+#include "SudokuGrid.h"
 #include "constexpr_functions.h"
 
 #include <algorithm>
-#include <cstddef>
+#include <cassert>
+#include <iterator>
 #include <vector>
 
 namespace
@@ -17,10 +20,10 @@ bool contains(Container& container, const T value)
     return last != std::find(std::begin(container), last, value);
 }
 
-constexpr bool is_empty(const SudokuGrid::value_type& cellValue) noexcept
-{
-    return 0 == cellValue;
-}
+//constexpr bool is_empty(const SudokuGrid::value_type& cellValue) noexcept
+//{
+//    return 0 == cellValue;
+//}
 
 template <typename InputIterator>
 constexpr void append_non_empty_values(

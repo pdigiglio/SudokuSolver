@@ -44,7 +44,6 @@ if (GIT_FOUND)
     endif()
 endif()
 
-
 add_library(SudokuSolverLib
     STATIC
     BacktrackingSolver.cpp
@@ -89,7 +88,16 @@ add_executable(
 
 target_link_libraries(SudokuSolver PRIVATE SudokuSolverLib)
 
-#cmake_print_properties(
-#    TARGETS SudokuSolver
-#    PROPERTIES CXX_EXTENSIONS CXX_STANDARD_REQUIRED CXX_STANDARD)
+find_program(iwyu_path NAMES include-what-you-use iwyu)
+if(NOT iwyu_path)
+    message(WARNING "Cannot find 'include-what-you-use' package")
+else()
+    set_property(
+        TARGET SudokuSolver SudokuSolverLib
+        PROPERTY CXX_INCLUDE_WHAT_YOU_USE
+        "${iwyu_path}"
+        -Xiwyu
+        --no_fwd_decls)
+endif()
 
+cmake_print_properties(TARGETS SudokuSolver SudokuSolverLib PROPERTIES CXX_INCLUDE_WHAT_YOU_USE)

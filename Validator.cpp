@@ -5,6 +5,8 @@
 #include "constexpr_functions.h"
 
 #include <algorithm>
+#include <iterator>
+#include <utility>
 
 Validator::Validator(const SudokuGrid& grid)
     : Grid_(std::addressof(grid))

@@ -1,6 +1,8 @@
 #include "Solver.h"
 
 #include <algorithm>
+#include <iterator>
+#include <utility>
 
 namespace
 {
