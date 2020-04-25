@@ -88,16 +88,42 @@ add_executable(
 
 target_link_libraries(SudokuSolver PRIVATE SudokuSolverLib)
 
-find_program(iwyu_path NAMES include-what-you-use iwyu)
-if(NOT iwyu_path)
+find_program(IWYU_PATH NAMES "include-what-you-use" "iwyu")
+if(NOT IWYU_PATH)
     message(WARNING "Cannot find 'include-what-you-use' package")
 else()
     set_property(
         TARGET SudokuSolver SudokuSolverLib
         PROPERTY CXX_INCLUDE_WHAT_YOU_USE
-        "${iwyu_path}"
+        "${IWYU_PATH}"
         -Xiwyu
         --no_fwd_decls)
 endif()
-
 cmake_print_properties(TARGETS SudokuSolver SudokuSolverLib PROPERTIES CXX_INCLUDE_WHAT_YOU_USE)
+
+find_program(CLANG_TIDY_PATH NAMES "clang-tidy")
+if(NOT CLANG_TIDY_PATH)
+    message(WARNING "Cannot find 'clang-tidy' package")
+else()
+    set(CLANG_TIDY_CHECK_LIST
+        "-*"
+        "bugprone-*"
+        "cppcoreguidelines-*"
+        "-cppcoreguidelines-pro-type-vararg"
+        "modernize-*"
+        "-modernize-use-trailing-return-type"
+        "performance-*"
+        "redability-*")
+
+    foreach(CHECK IN LISTS CLANG_TIDY_CHECK_LIST)
+        set(CLANG_TIDY_CHECKS "${CLANG_TIDY_CHECKS},${CHECK}")
+    endforeach()
+    string(REGEX REPLACE "^," "-checks=" CLANG_TIDY_CHECKS "${CLANG_TIDY_CHECKS}")
+
+    set_property(
+        TARGET SudokuSolver SudokuSolverLib
+        PROPERTY CXX_CLANG_TIDY
+        "${CLANG_TIDY_PATH}"
+        "${CLANG_TIDY_CHECKS}")
+endif()
+cmake_print_properties(TARGETS SudokuSolver SudokuSolverLib PROPERTIES CXX_CLANG_TIDY)

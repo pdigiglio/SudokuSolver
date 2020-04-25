@@ -23,27 +23,17 @@ int main(int argc, char *argv[])
 {
     if (argc != 2)
     {
-        fprintf(stderr, "Usage: SudokuSolver \"input file\"\n");
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        fprintf(stderr, "Usage: %s \"input file\"\n", argv[0]);
         return 1;
     }
 
     SudokuGrid grid;
-    const auto readStatus = fill_from_input_file(argv[1], grid);
+    const auto readStatus = fill_from_input_file(argv[1], grid); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     if (!readStatus)
         return 1;
 
     print_grid(grid);
-
-    //std::for_each(grid.row_cbegin(0), grid.row_cend(0), [](char c) { printf("%c ", c + 48); } );
-    //puts("");
-
-    //std::for_each(grid.column_cbegin(3), grid.column_cend(3), [](char c) { printf("%c ", c + 48); } );
-    //puts("");
-
-    //std::for_each(grid.subgrid_cbegin<3, 6>(0,0), grid.subgrid_cend<3,6>(0,0), [](char c) { printf("%c ", c + 48); } );
-    //puts("");
-
-    //return 0;
 
     const auto inputValid = print_validation_status(grid);
     if (!inputValid)
