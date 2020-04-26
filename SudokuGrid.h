@@ -14,7 +14,7 @@ public:
 
 constexpr bool is_empty(typename SudokuGrid::value_type cell) noexcept
 {
-    return 0 != cell;
+    return 0 == cell;
 }
 
 bool fill_from_input_file(const char* filePath, SudokuGrid& grid);

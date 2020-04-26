@@ -20,20 +20,12 @@ bool contains(Container& container, const T value)
     return last != std::find(std::begin(container), last, value);
 }
 
-//constexpr bool is_empty(const SudokuGrid::value_type& cellValue) noexcept
-//{
-//    return 0 == cellValue;
-//}
-
-template <typename InputIterator>
-constexpr void append_non_empty_values(
-        InputIterator beginCell,
-        InputIterator endCell,
-        ConstrainSolver::candidate_collection& digits)
+template <typename It, typename Container>
+constexpr void append_unique_non_empty_values(It begin, It end, Container& digits)
 {
-    for (auto it = beginCell; it != endCell; ++it)
+    for (; begin != end; ++begin)
     {
-        const auto value = *it;
+        const auto value = *begin;
         if (!is_empty(value) && !contains(digits, value))
         {
             digits.push_back(value);
@@ -41,12 +33,46 @@ constexpr void append_non_empty_values(
     }
 }
 
+constexpr auto SudokuSubgridSide = 3;
+
+template <typename It>
+struct Range
+{
+    It Begin;
+    It End;
+};
+
+template <typename It>
+constexpr Range<It> make_range(It begin, It end)
+{
+    return { begin, end };
+}
+
+template <typename Grid>
+constexpr auto sudoku_subgrid_range(Grid& grid, unsigned row, unsigned col)
+{
+    static_assert (Grid::rows() == 9, "Not a SudokuGrid" );
+    static_assert (Grid::columns() == 9, "Not a SudokuGrid" );
+
+    const auto rowStart = SudokuSubgridSide * (row / SudokuSubgridSide);
+    const auto colStart = SudokuSubgridSide * (col / SudokuSubgridSide);
+
+    return make_range(
+        grid.template subgrid_begin<SudokuSubgridSide, SudokuSubgridSide>(rowStart, colStart),
+        grid.template subgrid_end<SudokuSubgridSide, SudokuSubgridSide>(rowStart, colStart));
+}
+
+constexpr auto sudoku_subgrid_crange(const SudokuGrid& grid, unsigned row, unsigned col)
+{
+    return sudoku_subgrid_range(grid, row, col);
+}
+
 void append_row_digits(
         const SudokuGrid& grid,
         unsigned row,
         ConstrainSolver::candidate_collection& digits)
 {
-    append_non_empty_values(grid.row_begin(row), grid.row_end(row), digits);
+    append_unique_non_empty_values(grid.row_begin(row), grid.row_end(row), digits);
 }
 
 void append_column_digits(
@@ -54,7 +80,7 @@ void append_column_digits(
         unsigned column,
         ConstrainSolver::candidate_collection& digits)
 {
-    append_non_empty_values(grid.column_begin(column), grid.column_end(column), digits);
+    append_unique_non_empty_values(grid.column_begin(column), grid.column_end(column), digits);
 }
 
 void append_subgrid_digits(
@@ -63,13 +89,8 @@ void append_subgrid_digits(
         unsigned column,
         ConstrainSolver::candidate_collection& digits)
 {
-    constexpr auto subgridSide = Sqrt<SudokuGrid::rows()>::value;
-    const auto rowStart = subgridSide * (row / subgridSide);
-    const auto columnStart = subgridSide * (column / subgridSide);
-    append_non_empty_values(
-                grid.subgrid_begin<subgridSide, subgridSide>(rowStart, columnStart),
-                grid.subgrid_end<subgridSide, subgridSide>(rowStart, columnStart),
-                digits);
+    auto range = sudoku_subgrid_crange(grid, row, column);
+    append_unique_non_empty_values(range.Begin, range.End, digits);
 }
 
 std::vector<SudokuGrid::value_type> get_candidates(ConstrainSolver::candidate_collection& forbiddenDigits)
@@ -116,11 +137,8 @@ void erase_value(Container& container, const T& value)
     container.erase(it);
 }
 
-template <typename InputIterator, typename T>
-void remove_from_candidates(
-        InputIterator beginCandidate,
-        InputIterator endCandidate,
-        const T& value)
+template <typename It, typename T>
+void remove_from_candidates(It beginCandidate, It endCandidate, const T& value)
 {
     std::for_each(beginCandidate, endCandidate,
           [&value](auto& candidates) { erase_value(candidates, value); });
@@ -157,13 +175,10 @@ void remove_from_candidates(
     remove_from_candidate_row(value, missingDigits, row);
     remove_from_candidate_column(value, missingDigits, column);
 
-    constexpr auto subgridSide = Sqrt<SudokuGrid::sideLength()>::value;
-    const auto rowStart = subgridSide * (row / subgridSide);
-    const auto columnStart = subgridSide * (column / subgridSide);
-    remove_from_candidates(
-        missingDigits.subgrid_begin<subgridSide, subgridSide>(rowStart, columnStart),
-        missingDigits.subgrid_end<subgridSide, subgridSide>(rowStart, columnStart),
-        value);
+    {
+        auto range = sudoku_subgrid_range(missingDigits, row, column);
+        remove_from_candidates(range.Begin, range.End, value);
+    }
 }
 
 std::vector<MatrixPoint<unsigned>> get_occurrences_in_grid(
@@ -220,11 +235,11 @@ std::vector<MatrixPoint<unsigned>> unsolved_cells_in_this_grid_row(
         unsigned row,
         unsigned column)
 {
-    const auto gridColumnStart = 3 * (column / 3);
-    const auto gridColumnEnd = gridColumnStart + 3;
+    const auto gridColumnStart = SudokuSubgridSide * (column / SudokuSubgridSide);
+    const auto gridColumnEnd = gridColumnStart + SudokuSubgridSide;
 
     std::vector<MatrixPoint<unsigned>> unsolved;
-    unsolved.reserve(3);
+    unsolved.reserve(SudokuSubgridSide);
 
     for (auto c = gridColumnStart; c < gridColumnEnd; ++c)
     {
@@ -232,6 +247,29 @@ std::vector<MatrixPoint<unsigned>> unsolved_cells_in_this_grid_row(
         if (0 != cellCandidates.size())
         {
             unsolved.emplace_back(row, c);
+        }
+    }
+
+    return unsolved;
+}
+
+std::vector<MatrixPoint<unsigned>> unsolved_cells_in_this_grid_column(
+       const ConstrainSolver::candidate_grid& candidates,
+        unsigned row,
+        unsigned column)
+{
+    const auto gridRowStart = SudokuSubgridSide * (row / SudokuSubgridSide);
+    const auto gridRowEnd = gridRowStart + SudokuSubgridSide;
+
+    std::vector<MatrixPoint<unsigned>> unsolved;
+    unsolved.reserve(SudokuSubgridSide);
+
+    for (auto r = gridRowStart; r < gridRowEnd; ++r)
+    {
+        const auto& cellCandidates = candidates[r][column];
+        if (0 != cellCandidates.size())
+        {
+            unsolved.emplace_back(r, column);
         }
     }
 
@@ -249,7 +287,7 @@ ConstrainSolver::ConstrainSolver(SudokuGrid& grid)
     {
         for (unsigned c = 0; c < SudokuGrid::columns(); ++c)
         {
-            if (0 == grid[r][c])
+            if (is_empty(grid[r][c]))
             {
                 forbiddenDigits.clear();
 
@@ -283,106 +321,104 @@ bool ConstrainSolver::exec()
         {
             for (unsigned c = 0; c < SudokuGrid::columns(); ++c)
             {
+                // If there's no candidate, the cell is already full.
+                if (this->CandidateGrid_[r][c].empty())
+                    continue;
 
-                const auto cellCandidates = this->CandidateGrid_[r][c];
-
+                // If there's only one possible candidate, that's the right digit to insert.
+                SudokuGrid::value_type cellValue = 0;
+                if (this->CandidateGrid_[r][c].size() == 1)
                 {
-                    //const auto cellCandidates = this->CandidateDigits_[r][c];
-                    const auto rc = unsolved_cells_in_this_grid_row(this->CandidateGrid_, r, c);
-                    if (rc.size() != 0 && rc.size() == cellCandidates.size())
-                    {
-                        const auto constained = std::all_of(std::cbegin(rc), std::cend(rc),
-                                            [&cellCandidates, this](const auto& occurrence){ return cellCandidates == CandidateGrid_[occurrence]; });
-
-                        if (constained)
-                        {
-                            for (const auto cellValue : cellCandidates)
-                            {
-                                remove_from_candidate_row(cellValue, this->CandidateGrid_, r);
-                                for (const auto& occurrence : rc)
-                                {
-                                    this->CandidateGrid_[occurrence].push_back(cellValue);
-                                }
-                            }
-                        }
-                    }
+                    cellValue = this->CandidateGrid_[r][c][0];
                 }
-
+                else
                 {
-                    const auto cc = unsolved_cells_in_this_grid_row(this->CandidateGrid_, r, c);
-                    if (cc.size() != 0 && cc.size() == cellCandidates.size())
+                    // Copy the candidate values for the cell (r, c).
+                    const auto candidateValues = this->CandidateGrid_[r][c];
+
+//                    {
+//                        const auto unsolvedRowCellsInSubgrid = unsolved_cells_in_this_grid_row(this->CandidateGrid_, r, c);
+//                        const auto constrained =
+//                                (unsolvedRowCellsInSubgrid.size() == candidateValues.size()) &&
+//                                std::all_of(unsolvedRowCellsInSubgrid.begin(), unsolvedRowCellsInSubgrid.end(),
+//                                    [&candidateValues, this](const auto& occurrencePosition) { return candidateValues == CandidateGrid_[occurrencePosition]; });
+//
+//                        if (constrained)
+//                        {
+//#ifndef NDEBUG
+//                            puts("Row constrained");
+//#endif
+//                            for (const auto candidate : candidateValues)
+//                            {
+//                                remove_from_candidate_row(candidate, this->CandidateGrid_, r);
+//                                for (const auto& occurrence : unsolvedRowCellsInSubgrid)
+//                                {
+//                                    this->CandidateGrid_[occurrence].push_back(candidate);
+//                                }
+//                            }
+//                        }
+//                    }
+//
+//                    {
+//                        const auto unsolvedCellsInSubgridColumn = unsolved_cells_in_this_grid_column(this->CandidateGrid_, r, c);
+//                        const auto constrained =
+//                                (unsolvedCellsInSubgridColumn.size() == candidateValues.size()) &&
+//                                std::all_of(unsolvedCellsInSubgridColumn.begin(), unsolvedCellsInSubgridColumn.end(),
+//                                    [&candidateValues, this](const auto& occurrencePosition) { return candidateValues == CandidateGrid_[occurrencePosition]; });
+//
+//                        if (constrained)
+//                        {
+//#ifndef NDEBUG
+//                            puts("Column constrained");
+//#endif
+//                            for (const auto candidate : candidateValues)
+//                            {
+//                                remove_from_candidate_row(candidate, this->CandidateGrid_, r);
+//                                for (const auto& occurrence : unsolvedCellsInSubgridColumn)
+//                                {
+//                                    this->CandidateGrid_[occurrence].push_back(candidate);
+//                                }
+//                            }
+//                        }
+//                    }
+
+                    for (const auto candidate : candidateValues)
                     {
-                        const auto constained = std::all_of(std::cbegin(cc), std::cend(cc),
-                                            [&cellCandidates, this](const auto& occurrence){ return cellCandidates == CandidateGrid_[occurrence]; });
-
-                        if (constained)
-                        {
-                            for (const auto cellValue : cellCandidates)
-                            {
-                                remove_from_candidate_column(cellValue, this->CandidateGrid_, c);
-                                for (const auto& occurrence : cc)
-                                {
-                                    this->CandidateGrid_[occurrence].push_back(cellValue);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (1 == cellCandidates.size())
-                {
-                    const auto cellValue = cellCandidates[0];
-
-                    // This cell is now fixed
-                    this->CandidateGrid_[r][c].clear();
-                    remove_from_candidates(cellValue, this->CandidateGrid_, r, c);
-                    (*this->Grid_)[r][c] = cellValue;
-
-                    ++inserted;
-                }
-                else if (cellCandidates.size() > 1)
-                {
-
-                    for (const auto cellValue : cellCandidates)
-                    {
-                        const auto gridOccurrences = get_occurrences_in_grid(cellValue, this->CandidateGrid_, r, c);
+                        const auto gridOccurrences = get_occurrences_in_grid(candidate, this->CandidateGrid_, r, c);
                         if (are_on_the_same_row(gridOccurrences))
                         {
-                            remove_from_candidate_row(cellValue, this->CandidateGrid_, r);
+                            remove_from_candidate_row(candidate, this->CandidateGrid_, r);
                             for (const auto& gridOccurrence : gridOccurrences)
                             {
-                                this->CandidateGrid_[gridOccurrence].push_back(cellValue);
+                                this->CandidateGrid_[gridOccurrence].push_back(candidate);
                             }
                         }
                         else if (are_on_the_same_column(gridOccurrences))
                         {
-                            remove_from_candidate_column(cellValue, this->CandidateGrid_, c);
+                            remove_from_candidate_column(candidate, this->CandidateGrid_, c);
                             for (const auto& gridOccurrence : gridOccurrences)
                             {
-                                this->CandidateGrid_[gridOccurrence].push_back(cellValue);
+                                this->CandidateGrid_[gridOccurrence].push_back(candidate);
                             }
                         }
 
                         const auto gridOccurrenceCount = gridOccurrences.size();
                         assert(gridOccurrenceCount > 0);
-
-                        //const auto rowOccurrenceCount = get_occurrences_in_row(cellValue, this->CandidateDigits_, r).size();
-                        //assert(rowOccurrenceCount > 0);
-
-                        //const auto columnOccurrenceCount = get_occurrences_in_column(cellValue, this->CandidateDigits_, c).size();
-                        //assert(columnOccurrenceCount > 0);
-
-                        if (1 == gridOccurrenceCount) // || 1 == rowOccurrenceCount || 1 == columnOccurrenceCount)
+                        if (1 == gridOccurrenceCount)
                         {
-                            // This cell is now fixed.
-                            this->CandidateGrid_[r][c].clear();
-                            remove_from_candidates(cellValue, this->CandidateGrid_, r, c);
-                            (*this->Grid_)[r][c] = cellValue;
-
-                            ++inserted;
+                            cellValue = candidate;
                             break;
                         }
                     }
+                }
+
+                if (0 != cellValue)
+                {
+                    // This cell is now fixed.
+                    this->CandidateGrid_[r][c].clear();
+                    remove_from_candidates(cellValue, this->CandidateGrid_, r, c);
+                    (*this->Grid_)[r][c] = cellValue;
+                    ++inserted;
                 }
             }
         }
