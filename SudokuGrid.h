@@ -1,8 +1,12 @@
 #pragma once
 
 #include "Matrix.h" // IWYU pragma: export
+#include "constexpr_functions.h"
 
-class SudokuGrid final : public Matrix<char, 9, 9>
+static constexpr unsigned SudokuGridSide = 9;
+static constexpr unsigned SudokuSubgridSide = Sqrt<SudokuGridSide>::value;
+
+class SudokuGrid final : public Matrix<char, SudokuGridSide, SudokuGridSide>
 {
 public:
     static constexpr unsigned sideLength() noexcept

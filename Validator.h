@@ -2,6 +2,8 @@
 
 #include "fwd/SudokuGrid.h"
 
+#include "MatrixPoint.h" // IWYU pragma: export
+
 class Validator final
 {
 public:
@@ -16,13 +18,12 @@ public:
     ~Validator() = default;
 
     bool validate();
-    const char* type() const;
-    int index() const;
 
+    const MatrixPoint<unsigned>& firstDuplicate() const noexcept;
+    const MatrixPoint<unsigned>& secondDuplicate() const noexcept;
 private:
-    const SudokuGrid* Grid_;
+    const SudokuGrid* Grid_ { nullptr };
 
-    // either "row" or "col"
-    const char* DuplicateType_ = "";
-    int DuplicateIndex_ = -1;
+    MatrixPoint<unsigned> FirstDuplicate_;
+    MatrixPoint<unsigned> SecondDuplicate_;
 };

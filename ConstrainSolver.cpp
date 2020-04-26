@@ -51,8 +51,8 @@ constexpr Range<It> make_range(It begin, It end)
 template <typename Grid>
 constexpr auto sudoku_subgrid_range(Grid& grid, unsigned row, unsigned col)
 {
-    static_assert (Grid::rows() == 9, "Not a SudokuGrid" );
-    static_assert (Grid::columns() == 9, "Not a SudokuGrid" );
+    static_assert (Grid::rows() == SudokuGridSide, "Not a SudokuGrid" );
+    static_assert (Grid::columns() == SudokuGridSide, "Not a SudokuGrid" );
 
     const auto rowStart = SudokuSubgridSide * (row / SudokuSubgridSide);
     const auto colStart = SudokuSubgridSide * (col / SudokuSubgridSide);
@@ -253,28 +253,28 @@ std::vector<MatrixPoint<unsigned>> unsolved_cells_in_this_grid_row(
     return unsolved;
 }
 
-std::vector<MatrixPoint<unsigned>> unsolved_cells_in_this_grid_column(
-       const ConstrainSolver::candidate_grid& candidates,
-        unsigned row,
-        unsigned column)
-{
-    const auto gridRowStart = SudokuSubgridSide * (row / SudokuSubgridSide);
-    const auto gridRowEnd = gridRowStart + SudokuSubgridSide;
-
-    std::vector<MatrixPoint<unsigned>> unsolved;
-    unsolved.reserve(SudokuSubgridSide);
-
-    for (auto r = gridRowStart; r < gridRowEnd; ++r)
-    {
-        const auto& cellCandidates = candidates[r][column];
-        if (0 != cellCandidates.size())
-        {
-            unsolved.emplace_back(r, column);
-        }
-    }
-
-    return unsolved;
-}
+//std::vector<MatrixPoint<unsigned>> unsolved_cells_in_this_grid_column(
+//       const ConstrainSolver::candidate_grid& candidates,
+//        unsigned row,
+//        unsigned column)
+//{
+//    const auto gridRowStart = SudokuSubgridSide * (row / SudokuSubgridSide);
+//    const auto gridRowEnd = gridRowStart + SudokuSubgridSide;
+//
+//    std::vector<MatrixPoint<unsigned>> unsolved;
+//    unsolved.reserve(SudokuSubgridSide);
+//
+//    for (auto r = gridRowStart; r < gridRowEnd; ++r)
+//    {
+//        const auto& cellCandidates = candidates[r][column];
+//        if (0 != cellCandidates.size())
+//        {
+//            unsolved.emplace_back(r, column);
+//        }
+//    }
+//
+//    return unsolved;
+//}
 
 }
 

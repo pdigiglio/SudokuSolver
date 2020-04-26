@@ -85,13 +85,13 @@ void solve_impl(
     {
         for (unsigned c = 0; c < grid.columns(); ++c)
         {
-            if (0 == grid[r][c])
+            if (is_empty(grid[r][c]))
             {
-                for (unsigned i = 1; i < 10; ++i)
+                for (SudokuGrid::value_type i = 1; i <= static_cast<char>(SudokuGridSide); ++i)
                 {
-                    if (is_possible(grid, static_cast<char>(i), r, c))
+                    if (is_possible(grid, i, r, c))
                     {
-                        grid[r][c] = static_cast<char>(i);
+                        grid[r][c] = i;
                         ++inserted;
 
                         solve_impl(grid, missing, inserted, r);

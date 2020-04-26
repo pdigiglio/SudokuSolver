@@ -29,7 +29,8 @@ bool fill_from_input_file(const char* filePath, SudokuGrid& grid)
             }
 
             //grid[r][c] = static_cast<char>(buffer - '0');
-            grid[r][c] = buffer - 48;
+            //grid[r][c] = buffer - 48;
+            grid[r][c] = buffer - '0';
         }
     }
 
@@ -43,15 +44,15 @@ void print_row(const SudokuGrid& grid, size_t row)
 {
     assert(row < SudokuGrid::rows());
     printf("%c  %c  %c | %c  %c  %c | %c  %c  %c\n",
-            grid[row][0] + '0',
-            grid[row][1] + '0',
-            grid[row][2] + '0',
-            grid[row][3] + '0',
-            grid[row][4] + '0',
-            grid[row][5] + '0',
-            grid[row][6] + '0',
-            grid[row][7] + '0',
-            grid[row][8] + '0');
+            grid[row][0] + '0', // NOLINT(cppcoreguidelines-avoid-magic-numbers)
+            grid[row][1] + '0', // NOLINT(cppcoreguidelines-avoid-magic-numbers)
+            grid[row][2] + '0', // NOLINT(cppcoreguidelines-avoid-magic-numbers)
+            grid[row][3] + '0', // NOLINT(cppcoreguidelines-avoid-magic-numbers)
+            grid[row][4] + '0', // NOLINT(cppcoreguidelines-avoid-magic-numbers)
+            grid[row][5] + '0', // NOLINT(cppcoreguidelines-avoid-magic-numbers)
+            grid[row][6] + '0', // NOLINT(cppcoreguidelines-avoid-magic-numbers)
+            grid[row][7] + '0', // NOLINT(cppcoreguidelines-avoid-magic-numbers)
+            grid[row][8] + '0'); // NOLINT(cppcoreguidelines-avoid-magic-numbers)
 
 }
 

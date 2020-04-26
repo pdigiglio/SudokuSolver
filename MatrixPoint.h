@@ -13,11 +13,11 @@ struct MatrixPoint
         static_assert (std::is_integral<Integer>::value, "Integer is not an integral type");
     }
 
-    MatrixPoint(const MatrixPoint&) = default;
-    MatrixPoint(MatrixPoint&&) = default;
+    MatrixPoint(const MatrixPoint&) noexcept = default;
+    MatrixPoint(MatrixPoint&&) noexcept = default;
 
-    MatrixPoint& operator=(const MatrixPoint&) = default;
-    MatrixPoint& operator=(MatrixPoint&&) = default;
+    MatrixPoint& operator=(const MatrixPoint&) noexcept = default;
+    MatrixPoint& operator=(MatrixPoint&&) noexcept = default;
 
     ~MatrixPoint() = default;
 

@@ -1,42 +1,34 @@
 #include "Validator.h"
 
-#include "StaticVector.h"
 #include "SudokuGrid.h"
-#include "constexpr_functions.h"
 
 #include <algorithm>
 #include <iterator>
 #include <utility>
 
 Validator::Validator(const SudokuGrid& grid)
-    : Grid_(std::addressof(grid))
+    : Grid_(&grid)
 { }
 
 namespace
 {
 
-template <typename Container>
-bool has_duplicates(Container& container)
+template <typename It>
+std::pair<It, It> duplicate_non_empty_cells(It begin, It end)
 {
-    auto first = std::begin(container);
-    auto last = std::end(container);
-    std::sort(first, last);
+    for (; begin != end; ++begin)
+    {
+        if (!is_empty(*begin))
+        {
+            auto it = std::find(std::next(begin), end, *begin);
+            if (end != it)
+            {
+                return std::make_pair(begin, it);
+            }
+        }
+    }
 
-    auto it = std::unique(first, last);
-    return it != last;
-}
-
-template <typename InputIterator>
-bool has_duplicate_non_empty_cells(InputIterator beginCell, InputIterator endCell)
-{
-    using cell_type = SudokuGrid::value_type;
-    StaticVector<cell_type, SudokuGrid::rows()> nonEmptyDigits;
-
-    auto outputIterator = std::back_inserter(nonEmptyDigits);
-    std::copy_if(beginCell, endCell, outputIterator,
-         [](const cell_type& value) { return 0 != value; });
-
-    return has_duplicates(nonEmptyDigits);
+    return std::make_pair(end, end);
 }
 
 }
@@ -45,42 +37,53 @@ bool Validator::validate()
 {
     for (unsigned r = 0; r < SudokuGrid::rows(); ++r)
     {
-        const auto rowHasDuplicates = has_duplicate_non_empty_cells(
-                    this->Grid_->row_cbegin(r), this->Grid_->row_cend(r));
-
-        if (rowHasDuplicates)
+        const auto begin = this->Grid_->row_cbegin(r);
+        const auto duplicates = duplicate_non_empty_cells(begin, this->Grid_->row_cend(r));
+        if (duplicates.first != duplicates.second)
         {
-            this->DuplicateType_ = "row";
-            this->DuplicateIndex_ = r;
+            this->FirstDuplicate_.Row = r;
+            this->FirstDuplicate_.Column = std::distance(begin, duplicates.first);
+
+            this->SecondDuplicate_.Row = r;
+            this->SecondDuplicate_.Column = std::distance(begin, duplicates.second);
+
             return false;
         }
     }
 
     for (unsigned c = 0; c < SudokuGrid::columns(); ++c)
     {
-        const auto columnHasDUplicates = has_duplicate_non_empty_cells(
-                    this->Grid_->column_cbegin(c), this->Grid_->column_cend(c));
-        if (columnHasDUplicates)
+        const auto begin = this->Grid_->column_cbegin(c);
+        const auto duplicates = duplicate_non_empty_cells(begin, this->Grid_->column_end(c));
+        if (duplicates.first != duplicates.second)
         {
-            this->DuplicateType_ = "col";
-            this->DuplicateIndex_ = c;
+            this->FirstDuplicate_.Row = std::distance(begin, duplicates.first);
+            this->FirstDuplicate_.Column = c;
+
+            this->SecondDuplicate_.Row = std::distance(begin, duplicates.second);
+            this->SecondDuplicate_.Column = c;
+
             return false;
         }
     }
 
-    constexpr auto subgridSide = Sqrt<SudokuGrid::rows()>::value;
-    for (unsigned r = 0; r < SudokuGrid::rows(); r += subgridSide)
+    for (unsigned r = 0; r < SudokuGridSide; r += SudokuSubgridSide)
     {
-        for (unsigned c = 0; c < SudokuGrid::columns(); c += subgridSide)
+        for (unsigned c = 0; c < SudokuGridSide; c += SudokuSubgridSide)
         {
-            const auto gridHasDuplicates = has_duplicate_non_empty_cells(
-                        this->Grid_->subgrid_cbegin<subgridSide, subgridSide>(r, c),
-                        this->Grid_->subgrid_cend<subgridSide, subgridSide>(r, c));
-
-            if (gridHasDuplicates)
+            const auto begin = this->Grid_->subgrid_cbegin<SudokuSubgridSide, SudokuSubgridSide>(r,c);
+            const auto end = this->Grid_->subgrid_cend<SudokuSubgridSide, SudokuSubgridSide>(r,c);
+            const auto duplicates = duplicate_non_empty_cells(begin, end);
+            if (duplicates.first != duplicates.second)
             {
-                this->DuplicateType_ = "grd";
-                this->DuplicateIndex_ = r * 10 + c;
+                const auto i = std::distance(begin, duplicates.first);
+                this->FirstDuplicate_.Row = r + i / SudokuSubgridSide;
+                this->FirstDuplicate_.Column = c + i % SudokuSubgridSide;
+
+                const auto j = std::distance(begin, duplicates.first);
+                this->SecondDuplicate_.Row = r + j / SudokuSubgridSide;
+                this->SecondDuplicate_.Column = c + j % SudokuSubgridSide;
+
                 return false;
             }
         }
@@ -89,12 +92,12 @@ bool Validator::validate()
     return true;
 }
 
-const char* Validator::type() const
+const MatrixPoint<unsigned>& Validator::firstDuplicate() const noexcept
 {
-    return this->DuplicateType_;
+    return this->FirstDuplicate_;
 }
 
-int Validator::index() const
+const MatrixPoint<unsigned>& Validator::secondDuplicate() const noexcept
 {
-    return this->DuplicateIndex_;
+    return this->SecondDuplicate_;
 }

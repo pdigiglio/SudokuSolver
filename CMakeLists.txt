@@ -110,6 +110,7 @@ else()
         "bugprone-*"
         "cppcoreguidelines-*"
         "-cppcoreguidelines-pro-type-vararg"
+        "-cppcoreguidelines-pro-bounds-array-to-pointer-decay"
         "modernize-*"
         "-modernize-use-trailing-return-type"
         "performance-*"
@@ -124,7 +125,6 @@ else()
         TARGET SudokuSolver SudokuSolverLib
         PROPERTY CXX_CLANG_TIDY
         "${CLANG_TIDY_PATH}"
-        "-header-filter=.*"
         "${CLANG_TIDY_CHECKS}")
 endif()
 cmake_print_properties(TARGETS SudokuSolver SudokuSolverLib PROPERTIES CXX_CLANG_TIDY)

@@ -13,7 +13,12 @@ bool print_validation_status(const SudokuGrid& grid)
     fprintf(output, "Validation [1: success, 0: failure]: %d.\n", status);
     if (!status)
     {
-        fprintf(output, "Duplicate at %s index %d\n", validator.type(), validator.index());
+        fprintf(output,
+            "Duplicates at (%u, %u) and (%u, %u)\n",
+            validator.firstDuplicate().Row,
+            validator.firstDuplicate().Column,
+            validator.secondDuplicate().Row,
+            validator.secondDuplicate().Column);
     }
 
     return status;
