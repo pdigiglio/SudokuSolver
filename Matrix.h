@@ -202,11 +202,11 @@ public:
 
     explicit Matrix() = default;
 
-    Matrix(const Matrix&) = default;
-    Matrix(Matrix&&) = default;
+    Matrix(const Matrix&) noexcept(std::is_nothrow_copy_constructible<T>::value) = default;
+    Matrix(Matrix&&) noexcept(std::is_nothrow_move_constructible<T>::value) = default;
 
-    Matrix& operator=(const Matrix&) = default;
-    Matrix& operator=(Matrix&&) = default;
+    Matrix& operator=(const Matrix&) noexcept(std::is_nothrow_copy_assignable<T>::value) = default;
+    Matrix& operator=(Matrix&&) noexcept(std::is_nothrow_move_assignable<T>::value) = default;
 
     ~Matrix() = default;
 

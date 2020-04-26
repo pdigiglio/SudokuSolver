@@ -4,7 +4,7 @@
 #include "doctest/doctest.h"
 
 #include "Matrix.h"
-#include "Solver.h"
+#include "ConstrainSolver.h"
 #include "Validator.h"
 
 void solve_grid(const char* inputFileName)
@@ -18,7 +18,7 @@ void solve_grid(const char* inputFileName)
     const auto inputValid = Validator(grid).validate();
     REQUIRE(inputValid);
 
-    Solver solver(grid);
+    ConstrainSolver solver(grid);
     const auto solved = solver.exec();
 
     if (!solved)

@@ -311,12 +311,8 @@ unsigned ConstrainSolver::iterations() const
 
 bool ConstrainSolver::exec()
 {
-    unsigned inserted = 0;
-
     do
     {
-        inserted = 0;
-
         for (unsigned r = 0; r < SudokuGrid::rows(); ++r)
         {
             for (unsigned c = 0; c < SudokuGrid::columns(); ++c)
@@ -336,29 +332,27 @@ bool ConstrainSolver::exec()
                     // Copy the candidate values for the cell (r, c).
                     const auto candidateValues = this->CandidateGrid_[r][c];
 
-//                    {
-//                        const auto unsolvedRowCellsInSubgrid = unsolved_cells_in_this_grid_row(this->CandidateGrid_, r, c);
-//                        const auto constrained =
-//                                (unsolvedRowCellsInSubgrid.size() == candidateValues.size()) &&
-//                                std::all_of(unsolvedRowCellsInSubgrid.begin(), unsolvedRowCellsInSubgrid.end(),
-//                                    [&candidateValues, this](const auto& occurrencePosition) { return candidateValues == CandidateGrid_[occurrencePosition]; });
-//
-//                        if (constrained)
-//                        {
-//#ifndef NDEBUG
-//                            puts("Row constrained");
-//#endif
-//                            for (const auto candidate : candidateValues)
-//                            {
-//                                remove_from_candidate_row(candidate, this->CandidateGrid_, r);
-//                                for (const auto& occurrence : unsolvedRowCellsInSubgrid)
-//                                {
-//                                    this->CandidateGrid_[occurrence].push_back(candidate);
-//                                }
-//                            }
-//                        }
-//                    }
-//
+                    {
+                        const auto unsolvedRowCellsInSubgrid = unsolved_cells_in_this_grid_row(this->CandidateGrid_, r, c);
+                        const auto constrained =
+                                (unsolvedRowCellsInSubgrid.size() == candidateValues.size()) &&
+                                std::all_of(unsolvedRowCellsInSubgrid.begin(), unsolvedRowCellsInSubgrid.end(),
+                                    [&candidateValues, this](const auto& occurrencePosition) { return candidateValues == CandidateGrid_[occurrencePosition]; });
+
+                        if (constrained)
+                        {
+                            for (const auto candidate : candidateValues)
+                            {
+                                remove_from_candidate_row(candidate, this->CandidateGrid_, r);
+                                for (const auto& occurrence : unsolvedRowCellsInSubgrid)
+                                {
+                                    this->CandidateGrid_[occurrence].push_back(candidate);
+                                }
+                            }
+                        }
+                    }
+
+                    // TODO: fix this!
 //                    {
 //                        const auto unsolvedCellsInSubgridColumn = unsolved_cells_in_this_grid_column(this->CandidateGrid_, r, c);
 //                        const auto constrained =
@@ -368,12 +362,12 @@ bool ConstrainSolver::exec()
 //
 //                        if (constrained)
 //                        {
-//#ifndef NDEBUG
-//                            puts("Column constrained");
-//#endif
+////#ifndef NDEBUG
+////                            puts("Column constrained");
+////#endif
 //                            for (const auto candidate : candidateValues)
 //                            {
-//                                remove_from_candidate_row(candidate, this->CandidateGrid_, r);
+//                                remove_from_candidate_column(candidate, this->CandidateGrid_, c);
 //                                for (const auto& occurrence : unsolvedCellsInSubgridColumn)
 //                                {
 //                                    this->CandidateGrid_[occurrence].push_back(candidate);
@@ -418,15 +412,14 @@ bool ConstrainSolver::exec()
                     this->CandidateGrid_[r][c].clear();
                     remove_from_candidates(cellValue, this->CandidateGrid_, r, c);
                     (*this->Grid_)[r][c] = cellValue;
-                    ++inserted;
+                    ++(this->InsertedDigits_);
                 }
             }
         }
 
-        this->InsertedDigits_ += inserted;
         ++(this->Iterations_);
     }
-    while(0 != inserted);
+    while(this->InsertedDigits_ != this->NumberOfMissingDigits_);
 
     return this->InsertedDigits_ == this->NumberOfMissingDigits_;
 }

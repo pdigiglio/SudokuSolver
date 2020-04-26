@@ -8,10 +8,6 @@ template <typename T, size_t Capacity>
 class StaticVector
 {
 public:
-    explicit StaticVector()
-        : Data_(), Size_(0)
-    { }
-
     const T& operator[](size_t i) const
     {
         assert(i < this->size());
@@ -103,8 +99,8 @@ public:
     }
 
 private:
-    std::array<T, Capacity> Data_;
-    size_t Size_;
+    std::array<T, Capacity> Data_{};
+    size_t Size_ = 0;
 };
 
 template <typename T, size_t Capacity>
